@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '../services/supabase'
 
@@ -38,35 +38,59 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<void> => {
     try {
+      console.log('[DEBUG] fetchProfile called for user:', userId)
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, role')
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('[DEBUG] Error fetching profile:', error)
+        setProfile(null)
+        return
+      }
+      
+      console.log('[DEBUG] Profile fetched successfully:', data)
       setProfile(data)
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('[DEBUG] Error in fetchProfile, setting profile to null:', error)
       setProfile(null)
     }
   }
 
   const refreshProfile = async () => {
     if (user) {
+      // Don't set loading - this is a background refresh
       await fetchProfile(user.id)
     }
   }
 
   useEffect(() => {
-    // Get initial session
+    let mounted = true
+    
+    // Get initial session - loading represents auth resolution, not profile fetch
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return
+      
+      console.log('[DEBUG] Initial session check:', session?.user?.id)
       setUser(session?.user ?? null)
+      
+      // Auth is resolved - set loading to false immediately
+      // Profile fetch happens in background and doesn't block
+      setLoading(false)
+      
+      // Fetch profile in background (non-blocking)
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
-      } else {
+        fetchProfile(session.user.id).catch((error) => {
+          console.error('[DEBUG] Background profile fetch failed:', error)
+        })
+      }
+    }).catch((error) => {
+      console.error('[DEBUG] Error getting initial session:', error)
+      if (mounted) {
         setLoading(false)
       }
     })
@@ -75,16 +99,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('[DEBUG] Auth state changed:', _event, session?.user?.id)
       setUser(session?.user ?? null)
+      
+      // Auth is resolved - set loading to false immediately
+      setLoading(false)
+      
+      // Fetch profile in background (non-blocking)
       if (session?.user) {
-        await fetchProfile(session.user.id)
+        fetchProfile(session.user.id).catch((error) => {
+          console.error('[DEBUG] Background profile fetch failed:', error)
+        })
       } else {
         setProfile(null)
       }
-      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string) => {
@@ -134,21 +168,56 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }
 
   const becomeInstructor = async () => {
-    if (!user) return { error: new Error('Not authenticated') }
+    console.log('[DEBUG] becomeInstructor called, user:', user?.id)
+    
+    if (!user) {
+      console.error('[DEBUG] becomeInstructor: No user')
+      return { error: new Error('Not authenticated') }
+    }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'instructor' })
-        .eq('id', user.id)
+      console.log('[DEBUG] Calling Supabase RPC request_instructor for user:', user.id)
+      const { data, error: rpcError } = await supabase.rpc('request_instructor')
 
-      if (error) return { error }
+      console.log('[DEBUG] RPC response:', { data, error: rpcError })
 
-      // Refresh profile
-      await fetchProfile(user.id)
+      if (rpcError) {
+        console.error('[DEBUG] RPC error:', rpcError)
+        return { error: rpcError }
+      }
+
+      console.log('[DEBUG] RPC successful, ensuring instructor_profiles entry exists...')
+      
+      // Ensure instructor_profiles entry exists (upsert with minimal data)
+      const { error: profileError } = await supabase
+        .from('instructor_profiles')
+        .upsert({
+          id: user.id,
+        }, {
+          onConflict: 'id'
+        })
+
+      if (profileError) {
+        console.error('[DEBUG] Error creating instructor_profiles entry:', profileError)
+        // Don't fail the whole operation if profile creation fails
+        // The user can still access /admin and create it there
+        console.warn('[DEBUG] Continuing despite instructor_profiles error')
+      } else {
+        console.log('[DEBUG] instructor_profiles entry created/updated')
+      }
+
+      console.log('[DEBUG] Refreshing profile...')
+      // Refresh profile - don't block on loading state
+      try {
+        await fetchProfile(user.id)
+        console.log('[DEBUG] Profile refreshed successfully')
+      } catch (error) {
+        console.error('[DEBUG] Error refreshing profile:', error)
+      }
       return { error: null }
     } catch (error) {
-      return { error }
+      console.error('[DEBUG] Exception in becomeInstructor:', error)
+      return { error: error as Error }
     }
   }
 

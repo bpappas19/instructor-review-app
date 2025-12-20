@@ -154,7 +154,7 @@ const InstructorProfilePage = () => {
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <div className="flex items-center gap-3">
                         <span className="font-semibold text-text-light-primary dark:text-text-dark-primary">
-                          {review.profiles?.email || 'Anonymous'}
+                          {review.profiles?.email || 'Anonymous Reviewer'}
                         </span>
                         <RatingStars rating={review.rating} />
                       </div>

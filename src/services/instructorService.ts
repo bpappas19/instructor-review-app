@@ -23,6 +23,7 @@ export interface Review {
 
 export const fetchInstructorProfile = async (instructorId: string): Promise<InstructorProfile | null> => {
   try {
+    // Public query - no auth required
     const { data, error } = await supabase
       .from('instructor_profiles')
       .select('*')
@@ -31,6 +32,7 @@ export const fetchInstructorProfile = async (instructorId: string): Promise<Inst
 
     if (error) {
       console.error('Error fetching instructor profile:', error)
+      // Don't throw - return null for graceful handling
       return null
     }
 
@@ -43,13 +45,17 @@ export const fetchInstructorProfile = async (instructorId: string): Promise<Inst
 
 export const fetchInstructorReviews = async (instructorId: string): Promise<Review[]> => {
   try {
+    // Public query - no auth required
+    // Try to fetch with profile email, but fallback to basic review data if RLS blocks profile access
     const { data, error } = await supabase
       .from('reviews')
       .select(`
-        *,
-        profiles:reviewer_id (
-          email
-        )
+        id,
+        instructor_id,
+        reviewer_id,
+        rating,
+        body,
+        created_at
       `)
       .eq('instructor_id', instructorId)
       .order('created_at', { ascending: false })
@@ -59,7 +65,18 @@ export const fetchInstructorReviews = async (instructorId: string): Promise<Revi
       return []
     }
 
-    return data || []
+    // Map the data to Review format (email will be null/undefined for public users)
+    const reviews: Review[] = (data || []).map((review) => ({
+      id: review.id,
+      instructor_id: review.instructor_id,
+      reviewer_id: review.reviewer_id,
+      rating: review.rating,
+      body: review.body,
+      created_at: review.created_at,
+      profiles: undefined, // Don't expose reviewer email to public
+    }))
+
+    return reviews
   } catch (error) {
     console.error('Error fetching reviews:', error)
     return []
@@ -74,6 +91,7 @@ export const calculateAverageRating = (reviews: Review[] | { rating: number }[])
 
 export const fetchAllInstructors = async (): Promise<InstructorProfile[]> => {
   try {
+    // Public query - no auth required
     const { data, error } = await supabase
       .from('instructor_profiles')
       .select('*')
@@ -99,15 +117,17 @@ export interface InstructorWithRating extends InstructorProfile {
 
 export const fetchInstructorsWithRatings = async (): Promise<InstructorWithRating[]> => {
   try {
+    // Public query - no auth required
     const instructors = await fetchAllInstructors()
     
-    // Fetch all reviews to calculate ratings
+    // Fetch all reviews to calculate ratings (public query)
     const { data: allReviews, error: reviewsError } = await supabase
       .from('reviews')
       .select('instructor_id, rating')
 
     if (reviewsError) {
       console.error('Error fetching reviews for ratings:', reviewsError)
+      // Continue with empty reviews array - don't fail the whole operation
     }
 
     // Calculate ratings and review counts for each instructor

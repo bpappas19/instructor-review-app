@@ -5,6 +5,7 @@ import InstructorProfilePage from './pages/InstructorProfilePage'
 import SignUpPage from './pages/SignUpPage'
 import LogInPage from './pages/LogInPage'
 import InstructorAdminPage from './pages/InstructorAdminPage'
+import InstructorOnboardingPage from './pages/InstructorOnboardingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/instructors/:id" element={<InstructorProfilePage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LogInPage />} />
+        <Route path="/instructor/onboarding" element={<InstructorOnboardingPage />} />
         <Route
           path="/admin"
           element={
