@@ -43,6 +43,29 @@ USING (true);
 - **INSERT:** Only authenticated users can create reviews
 - **UPDATE/DELETE:** Only the review author can modify/delete their review
 
+## Database Schema Updates
+
+### `instructor_profiles` Table - New Columns
+
+Add these columns for the "Workout Music" feature:
+
+```sql
+-- Add Spotify playlist URL column
+ALTER TABLE instructor_profiles
+ADD COLUMN IF NOT EXISTS spotify_playlist_url TEXT;
+
+-- Add featured tracks column (JSONB array)
+ALTER TABLE instructor_profiles
+ADD COLUMN IF NOT EXISTS featured_tracks JSONB DEFAULT '[]'::jsonb;
+```
+
+**Column Details:**
+- `spotify_playlist_url`: TEXT field for storing Spotify playlist links
+- `featured_tracks`: JSONB array storing objects with `song_title` and `artist` fields
+  - Example value: `[{"song_title": "Song Name", "artist": "Artist Name"}]`
+
+**Note:** The existing UPDATE policy for `instructor_profiles` should already allow instructors to update these new columns (they can update their own profile).
+
 ## Notes
 
 1. The frontend now fetches reviews without joining the `profiles` table to avoid RLS issues

@@ -33,9 +33,34 @@ const HomePage = () => {
     }
   }
 
+  // Category-specific icon colors (muted, tasteful)
+  const getCategoryIconColor = (categoryName: string) => {
+    const colors: Record<string, string> = {
+      'Yoga': 'text-teal-500 dark:text-teal-300',
+      'HIIT': 'text-pink-500 dark:text-pink-400',
+      'Pilates': 'text-amber-500 dark:text-amber-400',
+      'Cycling': 'text-indigo-500 dark:text-indigo-400',
+      'Strength': 'text-orange-500 dark:text-orange-400',
+      'Dance': 'text-blue-500 dark:text-blue-400',
+      'Boxing': 'text-red-500 dark:text-red-400',
+    }
+    return colors[categoryName] || 'text-text-light-secondary dark:text-text-dark-secondary'
+  }
+
   return (
-    <Layout>
-      <section className="my-10 @container">
+    <>
+      <style>{`
+        .homepage-layout > div:first-child {
+          background-color: transparent !important;
+        }
+        .homepage-layout.dark > div:first-child {
+          background-color: transparent !important;
+        }
+      `}</style>
+      <div className="min-h-screen w-full fixed inset-0 bg-[#F4F6FB] dark:bg-gray-900 -z-10"></div>
+      <div className="relative homepage-layout">
+        <Layout>
+          <section className="my-10 @container">
         <div className="@[480px]:p-4">
           <div className="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat @[480px]:gap-8 @[480px]:rounded-lg items-center justify-center p-4" data-alt="Person doing a high-energy workout pose" style={{ backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.9) 100%), url("https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=2070&auto=format&fit=crop")' }}>
             <div className="flex flex-col gap-2 text-center">
@@ -80,7 +105,7 @@ const HomePage = () => {
               to={`/instructors?category=${category.name}`}
               className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-light dark:bg-surface-dark hover:bg-white dark:hover:bg-slate-700 hover:shadow-md transition-all border border-transparent hover:border-border-light dark:hover:border-border-dark cursor-pointer group"
             >
-              <span className="material-symbols-outlined text-text-light-secondary dark:text-text-dark-secondary group-hover:text-primary transition-colors text-3xl" style={category.name === 'Strength' ? { fontVariationSettings: "'wght' 600" } : {}}>
+              <span className={`material-symbols-outlined ${getCategoryIconColor(category.name)} group-hover:opacity-80 transition-colors text-3xl`} style={category.name === 'Strength' ? { fontVariationSettings: "'wght' 600" } : {}}>
                 {category.icon}
               </span>
               <p className="text-text-light-primary dark:text-text-dark-primary text-sm font-medium text-center">{category.name}</p>
@@ -115,7 +140,9 @@ const HomePage = () => {
           </div>
         )}
       </section>
-    </Layout>
+        </Layout>
+      </div>
+    </>
   )
 }
 

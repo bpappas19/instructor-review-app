@@ -7,6 +7,11 @@ export interface InstructorProfile {
   categories?: string[]
   image_url?: string
   specialty?: string
+  city?: string
+  state?: string
+  spotify_playlist_url?: string
+  featured_tracks?: Array<{ song_title: string; artist: string }>
+  favorite_products?: Array<{ product_name: string; brand: string; purchase_url: string }>
 }
 
 export interface Review {

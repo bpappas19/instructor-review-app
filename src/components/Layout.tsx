@@ -37,92 +37,89 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 flex flex-1 justify-center py-5">
             <div className="layout-content-container flex flex-col w-full max-w-[1400px] flex-1">
               <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-4 sm:px-6 lg:px-10 py-3">
-                <Link to="/" className="flex items-center gap-2">
-                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-                    <path d="M8 20L16 12L24 20" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 8L13.5 12L18 12L14.5 14.5L16 18L12 15.5L8 18L9.5 14.5L6 12L10.5 12L12 8Z" fill="#3b82f6"/>
-                  </svg>
-                  <span className="text-text-light-primary dark:text-text-dark-primary font-bold text-lg">RateUp</span>
+                <Link to="/" className="text-primary font-bold text-5xl tracking-tight -ml-4">
+                  Flex
                 </Link>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-4">
                   {loading && !user ? (
                     <div className="text-text-light-secondary dark:text-text-dark-secondary text-sm">Loading...</div>
-                  ) : user ? (
-                    <>
-                      {profile?.role === 'instructor' && (
-                        <Link
-                          to="/admin"
-                          className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm font-medium leading-normal tracking-[0.015em] border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
-                        >
-                          <span className="truncate">Edit Profile</span>
-                        </Link>
-                      )}
-                      {profile?.role === 'user' && (
-                        <Link
-                          to="/instructor/onboarding"
-                          className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-primary text-white text-sm font-medium leading-normal tracking-[0.015em] hover:bg-blue-600 transition-colors"
-                        >
-                          <span className="truncate">For Instructors</span>
-                        </Link>
-                      )}
-                      <div className="relative" ref={dropdownRef}>
-                        <button
-                          onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="flex items-center gap-0.5 text-[11px] text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
-                          aria-label="User menu"
-                        >
-                          <span>{profile?.email || user.email}</span>
-                          <span className="text-[9px] opacity-60">▾</span>
-                        </button>
-                        {dropdownOpen && (
-                          <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-surface-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark overflow-hidden z-50">
-                            <div className="py-1">
-                              <button
-                                onClick={async () => {
-                                  setDropdownOpen(false)
-                                  await signOut()
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
-                              >
-                                Log Out
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </>
                   ) : (
                     <>
-                      {isHomePage ? (
-                        <>
-                          <Link
-                            to="/signup"
-                            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-blue-600 transition-colors"
+                      {/* Text links - always visible */}
+                      <Link
+                        to="#"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          console.log('Blog clicked')
+                        }}
+                        className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
+                      >
+                        Blog
+                      </Link>
+                      {/* Write a review - only on home page */}
+                      {isHomePage && (
+                        <Link
+                          to="/instructors"
+                          className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
+                        >
+                          Write a review
+                        </Link>
+                      )}
+                      
+                      {/* Right-aligned account action */}
+                      {user ? (
+                        /* User email with dropdown */
+                        <div className="relative" ref={dropdownRef}>
+                          <button
+                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                            className="flex items-center gap-0.5 text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
+                            aria-label="User menu"
                           >
-                            <span className="truncate">Sign Up</span>
-                          </Link>
-                          <Link
-                            to="/login"
-                            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm font-bold leading-normal tracking-[0.015em] border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                          >
-                            <span className="truncate">Log In</span>
-                          </Link>
-                        </>
+                            <span>{profile?.email || user.email}</span>
+                            <span className="text-xs opacity-60">▾</span>
+                          </button>
+                          {dropdownOpen && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark overflow-hidden z-50">
+                              <div className="py-1">
+                                {profile?.role === 'instructor' && (
+                                  <Link
+                                    to="/admin"
+                                    onClick={() => setDropdownOpen(false)}
+                                    className="block w-full text-left px-4 py-2 text-sm text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
+                                  >
+                                    Edit Profile
+                                  </Link>
+                                )}
+                                {profile?.role === 'user' && (
+                                  <Link
+                                    to="/instructor/onboarding"
+                                    onClick={() => setDropdownOpen(false)}
+                                    className="block w-full text-left px-4 py-2 text-sm text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
+                                  >
+                                    For instructors
+                                  </Link>
+                                )}
+                                <button
+                                  onClick={async () => {
+                                    setDropdownOpen(false)
+                                    await signOut()
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
+                                >
+                                  Log out
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <>
-                          <Link
-                            to="/signup"
-                            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm font-medium leading-normal tracking-[0.015em] border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
-                          >
-                            <span className="truncate">Sign Up</span>
-                          </Link>
-                          <Link
-                            to="/login"
-                            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm font-medium leading-normal tracking-[0.015em] border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
-                          >
-                            <span className="truncate">Log In</span>
-                          </Link>
-                        </>
+                        /* Log in text link */
+                        <Link
+                          to="/login"
+                          className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
+                        >
+                          Log in
+                        </Link>
                       )}
                     </>
                   )}
@@ -131,13 +128,8 @@ const Layout = ({ children }: LayoutProps) => {
               <main className="flex-grow">{children}</main>
               <footer className="mt-10 border-t border-solid border-border-light dark:border-border-dark px-10 py-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 text-text-light-secondary dark:text-text-dark-secondary">
-                    <div className="size-4 text-primary">
-                      <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
-                      </svg>
-                    </div>
-                    <p className="text-sm">© 2024 RateUp. All rights reserved.</p>
+                  <div className="text-text-light-secondary dark:text-text-dark-secondary">
+                    <p className="text-sm">© 2024 Flex. All rights reserved.</p>
                   </div>
                   <div className="flex gap-6 text-text-light-secondary dark:text-text-dark-secondary">
                     <a className="text-sm hover:text-primary transition-colors" href="#">About Us</a>

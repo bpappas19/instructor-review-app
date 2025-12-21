@@ -21,8 +21,8 @@ const InstructorListCard = ({ instructor }: InstructorListCardProps) => {
     ? instructor.bio.substring(0, 120).trim() + '...'
     : instructor.bio
 
-  // Generate consistent review count based on instructor ID for demo purposes
-  const reviewCount = instructor.reviewCount || (parseInt(instructor.id) * 8 + 12)
+  // Use actual review count, default to 0 if not provided
+  const reviewCount = instructor.reviewCount ?? 0
 
   return (
     <Link
@@ -55,7 +55,7 @@ const InstructorListCard = ({ instructor }: InstructorListCardProps) => {
             {instructor.rating}
           </span>
           <span className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
-            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+            {reviewCount === 0 ? '(No reviews)' : `(${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})`}
           </span>
         </div>
 

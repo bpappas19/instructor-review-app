@@ -46,8 +46,19 @@ const InstructorDirectoryPage = () => {
   }
 
   return (
-    <Layout>
-      <section className="my-10">
+    <>
+      <style>{`
+        .directory-layout > div:first-child {
+          background-color: transparent !important;
+        }
+        .directory-layout.dark > div:first-child {
+          background-color: transparent !important;
+        }
+      `}</style>
+      <div className="min-h-screen w-full fixed inset-0 bg-[#F4F6FB] dark:bg-gray-900 -z-10"></div>
+      <div className="relative directory-layout">
+        <Layout>
+          <section className="my-10">
         <div className="px-4 pb-4">
           <Link to="/" className="text-primary hover:text-blue-600 transition-colors text-sm mb-4 inline-block">
             ← Back to Home
@@ -150,7 +161,9 @@ const InstructorDirectoryPage = () => {
           </aside>
         </div>
       </section>
-    </Layout>
+        </Layout>
+      </div>
+    </>
   )
 }
 
