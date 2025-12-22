@@ -16,6 +16,7 @@ const InstructorDirectoryPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<string>('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -85,7 +86,7 @@ const InstructorDirectoryPage = () => {
   const filteredInstructors = useMemo(() => {
     return instructors.filter((instructor) => {
       // Rating filter
-      const matchesRating = instructor.rating >= minRating
+    const matchesRating = instructor.rating >= minRating
       
       // Location filter
       const instructorLocation = `${instructor.city || ''}, ${instructor.state || ''}`.trim()
@@ -96,10 +97,10 @@ const InstructorDirectoryPage = () => {
         (instructor.categories || []).some(cat => selectedCategories.includes(cat))
       
       // Search filter
-      const matchesSearch = !searchQuery || 
-        (instructor.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (instructor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (instructor.categories || []).some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesSearch = !searchQuery || 
+      (instructor.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (instructor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (instructor.categories || []).some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
       
       return matchesRating && matchesLocation && matchesCategory && matchesSearch
     })
@@ -120,9 +121,10 @@ const InstructorDirectoryPage = () => {
     setSelectedLocation('')
     setSelectedCategories([])
     setCategoryDropdownOpen(false)
+    setMobileFiltersOpen(false)
     // Clear category from URL if present
     if (categoryFromUrl) {
-      const newParams = new URLSearchParams(searchParams)
+    const newParams = new URLSearchParams(searchParams)
       newParams.delete('category')
       setSearchParams(newParams, { replace: true })
     }
@@ -152,24 +154,155 @@ const InstructorDirectoryPage = () => {
       <div className="relative directory-layout">
         <Layout>
           <section className="my-10">
-            <div className="px-4 pb-4">
-              <Link to="/" className="text-primary hover:text-blue-600 transition-colors text-sm mb-4 inline-block">
-                ← Back to Home
-              </Link>
-              <h1 className="text-text-light-primary dark:text-text-dark-primary text-[28px] font-bold leading-tight tracking-[-0.015em]">Instructor Directory</h1>
+        <div className="px-4 pb-4">
+          <Link to="/" className="text-primary hover:text-blue-600 transition-colors text-sm mb-4 inline-block">
+            ← Back to Home
+          </Link>
+          <h1 className="text-text-light-primary dark:text-text-dark-primary text-[28px] font-bold leading-tight tracking-[-0.015em]">Instructor Directory</h1>
+        </div>
+
+        {/* Search Results Info */}
+        {searchQuery && (
+          <div className="px-4 mb-4">
+            <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
+              Search results for "{searchQuery}"
+            </p>
+          </div>
+        )}
+
+            {/* Mobile Filters Button */}
+            <div className="px-4 mb-6 md:hidden">
+              <button
+                onClick={() => setMobileFiltersOpen(true)}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium transition-colors w-full h-[44px] ${
+                  hasActiveFilters
+                    ? 'bg-primary text-white border-primary hover:bg-blue-600'
+                    : 'border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                <span>Filters</span>
+                {hasActiveFilters && (
+                  <span className="ml-1">({selectedCategories.length + (minRating > 0 ? 1 : 0) + (selectedLocation ? 1 : 0)})</span>
+                )}
+              </button>
             </div>
 
-            {/* Search Results Info */}
-            {searchQuery && (
-              <div className="px-4 mb-4">
-                <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
-                  Search results for "{searchQuery}"
-                </p>
-              </div>
+            {/* Mobile Filters Modal/Sheet */}
+            {mobileFiltersOpen && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                  onClick={() => setMobileFiltersOpen(false)}
+                />
+                {/* Modal Content */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark rounded-t-2xl shadow-2xl z-50 md:hidden max-h-[85vh] overflow-y-auto">
+                  <div className="sticky top-0 bg-white dark:bg-surface-dark border-b border-border-light dark:border-border-dark p-4 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-text-light-primary dark:text-text-dark-primary">Filters</h2>
+                    <button
+                      onClick={() => setMobileFiltersOpen(false)}
+                      className="p-2 rounded-full hover:bg-surface-light dark:hover:bg-slate-700 transition-colors"
+                      aria-label="Close filters"
+                    >
+                      <span className="material-symbols-outlined text-text-light-primary dark:text-text-dark-primary">close</span>
+                    </button>
+                  </div>
+                  
+                  <div className="p-4 space-y-6">
+                    {/* Rating Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-3">
+                        Rating
+                      </label>
+                      <select
+                        value={minRating}
+                        onChange={(e) => setMinRating(Number(e.target.value))}
+                        className="w-full px-4 py-3 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm"
+                        aria-label="Rating filter"
+                      >
+                        {ratingOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Category Filter */}
+                    {availableCategories.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-3">
+                          Category
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {availableCategories.map(category => {
+                            const isSelected = selectedCategories.includes(category)
+                            return (
+                              <button
+                                key={category}
+                                type="button"
+                                onClick={() => handleCategoryToggle(category)}
+                                className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors min-h-[44px] ${
+                                  isSelected
+                                    ? 'bg-primary text-white border-primary hover:bg-blue-600'
+                                    : 'bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-slate-700'
+                                }`}
+                              >
+                                {category}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-3">
+                        Location
+                      </label>
+                      <select
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        disabled={availableLocations.length === 0}
+                        className="w-full px-4 py-3 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Location filter"
+                      >
+                        <option value="">All Locations</option>
+                        {availableLocations.map(location => (
+                          <option key={location.key} value={location.key}>
+                            {location.key}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Clear Filters Button */}
+                    {hasActiveFilters && (
+                      <button
+                        onClick={handleClearFilters}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium min-h-[44px]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                        <span>Clear filters</span>
+                      </button>
+                    )}
+
+                    {/* Apply Button */}
+                    <button
+                      onClick={() => setMobileFiltersOpen(false)}
+                      className="w-full px-4 py-3 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors min-h-[44px]"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Filter Pills */}
-            <div className="px-4 mb-6">
+            {/* Desktop Filter Pills */}
+            <div className="hidden md:block px-4 mb-6">
               <div className="flex gap-3 flex-wrap">
                 {/* Rating Filter Pill */}
                 <div className="relative">
@@ -202,8 +335,8 @@ const InstructorDirectoryPage = () => {
                           : 'border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                      <span>Category</span>
+              <span className="material-symbols-outlined text-[18px]">filter_list</span>
+              <span>Category</span>
                       {selectedCategories.length > 0 && (
                         <span className="ml-1">({selectedCategories.length})</span>
                       )}
@@ -227,7 +360,7 @@ const InstructorDirectoryPage = () => {
                                 }`}
                               >
                                 {category}
-                              </button>
+            </button>
                             )
                           })}
                         </div>
@@ -275,45 +408,45 @@ const InstructorDirectoryPage = () => {
                     <span>Clear filters</span>
                   </button>
                 )}
-              </div>
-            </div>
+          </div>
+        </div>
 
             {/* Main Content */}
             <div className="px-4">
-              {loading ? (
-                <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
-                  Loading instructors...
+            {loading ? (
+              <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
+                Loading instructors...
+              </div>
+            ) : (
+              <>
+                {/* Instructor List */}
+                <div className="space-y-4">
+                  {filteredInstructors.map((instructor) => (
+                    <InstructorListCard
+                      key={instructor.id}
+                      instructor={{
+                        id: instructor.id,
+                        name: instructor.name || 'Instructor',
+                        specialty: instructor.specialty || '',
+                        rating: instructor.rating,
+                        imageUrl: instructor.imageUrl,
+                        bio: instructor.bio || '',
+                        categories: instructor.categories || [],
+                        reviewCount: instructor.reviewCount,
+                      }}
+                    />
+                  ))}
                 </div>
-              ) : (
-                <>
-                  {/* Instructor List */}
-                  <div className="space-y-4">
-                    {filteredInstructors.map((instructor) => (
-                      <InstructorListCard
-                        key={instructor.id}
-                        instructor={{
-                          id: instructor.id,
-                          name: instructor.name || 'Instructor',
-                          specialty: instructor.specialty || '',
-                          rating: instructor.rating,
-                          imageUrl: instructor.imageUrl,
-                          bio: instructor.bio || '',
-                          categories: instructor.categories || [],
-                          reviewCount: instructor.reviewCount,
-                        }}
-                      />
-                    ))}
-                  </div>
 
-                  {filteredInstructors.length === 0 && (
-                    <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
-                      No instructors found matching your filters.
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </section>
+                {filteredInstructors.length === 0 && (
+                  <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
+                    No instructors found matching your filters.
+                  </div>
+                )}
+              </>
+            )}
+        </div>
+      </section>
         </Layout>
       </div>
     </>

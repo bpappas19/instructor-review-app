@@ -99,26 +99,26 @@ const InstructorProfilePage = () => {
           </Link>
 
           {/* Hero Section - Two Column Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-12 md:mb-12">
             {/* LEFT COLUMN - Large Image */}
             {instructor.image_url && (
               <img
                 src={instructor.image_url}
                 alt={instructor.name || 'Instructor'}
-                className="w-full aspect-square rounded-lg object-cover"
+                className="w-full aspect-square md:aspect-square max-h-[240px] md:max-h-none rounded-lg object-cover"
               />
             )}
 
             {/* RIGHT COLUMN - Name, Specialty, Metrics, About, Categories */}
             <div className="flex flex-col">
-              {/* Name and Button Row */}
-              <div className="flex items-start justify-between gap-4 mb-4">
+              {/* Name and Button Row - Stacked on mobile */}
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6 md:mb-4">
                 <div>
-                  <h1 className="text-text-light-primary dark:text-text-dark-primary text-4xl font-bold mb-2">
+                  <h1 className="text-text-light-primary dark:text-text-dark-primary text-3xl md:text-4xl font-bold mb-2">
                     {instructor.name || 'Instructor'}
                   </h1>
                   {(instructor.specialty || instructor.city || instructor.state) && (
-                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-lg">
+                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-base md:text-lg">
                       {instructor.specialty}
                       {instructor.specialty && (instructor.city || instructor.state) && ' · '}
                       {(instructor.city || instructor.state) && (
@@ -133,7 +133,7 @@ const InstructorProfilePage = () => {
                 {user ? (
                   <Link
                     to={`/write-review/${id}`}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors whitespace-nowrap h-fit"
+                    className="flex items-center justify-center gap-2 px-4 py-3 md:py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors w-full md:w-auto md:whitespace-nowrap h-[44px] md:h-fit"
                   >
                     <span className="material-symbols-outlined text-[18px]">rate_review</span>
                     <span>Write a Review</span>
@@ -141,7 +141,7 @@ const InstructorProfilePage = () => {
                 ) : (
                   <Link
                     to="/login"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors whitespace-nowrap h-fit"
+                    className="flex items-center justify-center gap-2 px-4 py-3 md:py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors w-full md:w-auto md:whitespace-nowrap h-[44px] md:h-fit"
                   >
                     <span className="material-symbols-outlined text-[18px]">login</span>
                     <span>Sign in to write a review</span>
@@ -149,15 +149,15 @@ const InstructorProfilePage = () => {
                 )}
               </div>
 
-              {/* Metrics Row */}
-              <div className="flex flex-wrap items-center gap-6 mb-6">
+              {/* Metrics Row - Stacked on mobile, horizontal on desktop */}
+              <div className="grid grid-cols-2 md:flex md:flex-wrap md:items-center gap-4 md:gap-6 mb-8 md:mb-6">
                 {/* Rating Metric */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center flex-shrink-0">
                     <span className="material-symbols-outlined text-amber-700 dark:text-amber-300 text-lg">star</span>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
+                    <div className="text-2xl md:text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
                       {averageRating > 0 ? averageRating.toFixed(1) : '—'}
                     </div>
                     <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-0.5">
@@ -166,8 +166,8 @@ const InstructorProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="h-12 w-px bg-border-light dark:bg-border-dark"></div>
+                {/* Divider - Hidden on mobile */}
+                <div className="hidden md:block h-12 w-px bg-border-light dark:bg-border-dark"></div>
 
                 {/* Music Metric */}
                 <div className="flex items-center gap-3">
@@ -175,7 +175,7 @@ const InstructorProfilePage = () => {
                     <span className="material-symbols-outlined text-indigo-700 dark:text-indigo-300 text-lg">music_note</span>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
+                    <div className="text-2xl md:text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
                       {musicVibe.toFixed(1)}
                     </div>
                     <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-0.5">
@@ -184,16 +184,16 @@ const InstructorProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="h-12 w-px bg-border-light dark:bg-border-dark"></div>
+                {/* Divider - Hidden on mobile */}
+                <div className="hidden md:block h-12 w-px bg-border-light dark:bg-border-dark"></div>
 
-                {/* Difficulty Metric */}
-                <div className="flex items-center gap-3">
+                {/* Difficulty Metric - Full width on mobile in 2-column grid */}
+                <div className="flex items-center gap-3 col-span-2 md:col-span-1">
                   <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/30 flex items-center justify-center flex-shrink-0">
                     <span className="material-symbols-outlined text-orange-700 dark:text-orange-300 text-lg">local_fire_department</span>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
+                    <div className="text-2xl md:text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
                       {difficulty.toFixed(1)}
                     </div>
                     <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-0.5">
@@ -205,7 +205,7 @@ const InstructorProfilePage = () => {
 
               {/* About Text - Directly under metrics */}
               {instructor.bio && (
-                <div className="mb-6">
+                <div className="mb-8 md:mb-6">
                   <p className="text-text-light-secondary dark:text-text-dark-secondary leading-relaxed">
                     {instructor.bio}
                   </p>
@@ -224,7 +224,7 @@ const InstructorProfilePage = () => {
           </div>
 
           {/* Gear and Music Row - Two Column Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16 md:mb-12">
             {/* Products I Love Section - Left */}
             <div className="bg-white dark:bg-surface-dark rounded-lg shadow-sm border border-border-light dark:border-border-dark p-6">
               <div className="flex items-center justify-between mb-4">
@@ -322,7 +322,7 @@ const InstructorProfilePage = () => {
           </div>
 
           {/* Reviews Section - Two Column Grid */}
-          <div className="bg-white dark:bg-surface-dark rounded-lg shadow-sm border border-border-light dark:border-border-dark p-6">
+          <div className="bg-white dark:bg-surface-dark rounded-lg shadow-sm border border-border-light dark:border-border-dark p-6 md:p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-text-light-primary dark:text-text-dark-primary text-xl font-bold">
                 Reviews {reviewCount > 0 ? `(${reviewCount})` : ''}

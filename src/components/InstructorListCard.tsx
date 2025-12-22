@@ -27,17 +27,17 @@ const InstructorListCard = ({ instructor }: InstructorListCardProps) => {
   return (
     <Link
       to={`/instructors/${instructor.id}`}
-      className="flex gap-4 rounded-lg bg-white dark:bg-surface-dark p-4 shadow-sm border border-border-light dark:border-border-dark hover:shadow-md transition-shadow"
+      className="flex flex-row gap-4 rounded-lg bg-white dark:bg-surface-dark p-5 md:p-4 shadow-sm border border-border-light dark:border-border-dark hover:shadow-md transition-shadow min-h-[44px]"
     >
-      {/* Photo on left */}
+      {/* Photo - Left-aligned on mobile and desktop */}
       <img
         alt={`Portrait of ${instructor.name}`}
-        className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg object-cover flex-shrink-0"
+        className="w-20 h-20 md:w-24 md:h-28 rounded-lg object-cover flex-shrink-0"
         src={instructor.imageUrl}
       />
       
-      {/* Content on right */}
-      <div className="flex-1 flex flex-col gap-2 min-w-0">
+      {/* Content - Right side on mobile and desktop */}
+      <div className="flex-1 flex flex-col gap-2 md:gap-2 min-w-0">
         {/* Name and Specialty */}
         <div>
           <h3 className="text-text-light-primary dark:text-text-dark-primary font-bold text-lg mb-1">
@@ -49,7 +49,7 @@ const InstructorListCard = ({ instructor }: InstructorListCardProps) => {
         </div>
 
         {/* Rating and Review Count */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-h-[44px] md:min-h-0">
           <RatingStars rating={instructor.rating} size="sm" />
           <span className="text-text-light-primary dark:text-text-dark-primary text-sm font-medium">
             {instructor.rating}
@@ -65,7 +65,7 @@ const InstructorListCard = ({ instructor }: InstructorListCardProps) => {
         </p>
 
         {/* Categories as pills */}
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="flex flex-wrap gap-2 mt-2 md:mt-1">
           {instructor.categories.map((category) => (
             <CategoryBadge key={category} category={category} variant="card" />
           ))}

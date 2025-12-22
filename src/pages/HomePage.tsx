@@ -105,11 +105,11 @@ const HomePage = () => {
       <section className="my-10">
         <h2 className="text-text-light-primary dark:text-text-dark-primary text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Explore by Category</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 px-4">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <Link
               key={category.name}
               to={`/instructors?category=${category.name}`}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-light dark:bg-surface-dark hover:bg-white dark:hover:bg-slate-700 hover:shadow-md transition-all border border-transparent hover:border-border-light dark:hover:border-border-dark cursor-pointer group"
+              className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-light dark:bg-surface-dark hover:bg-white dark:hover:bg-slate-700 hover:shadow-md transition-all border border-transparent hover:border-border-light dark:hover:border-border-dark cursor-pointer group ${index === categories.length - 1 ? 'hidden md:flex' : ''}`}
             >
               <span className={`material-symbols-outlined ${getCategoryIconColor(category.name)} group-hover:opacity-80 transition-colors text-3xl`} style={category.name === 'Strength' ? { fontVariationSettings: "'wght' 600" } : {}}>
                 {category.icon}

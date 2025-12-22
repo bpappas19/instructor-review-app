@@ -38,29 +38,29 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="layout-content-container flex flex-col w-full max-w-[1400px] flex-1">
               <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-4 sm:px-6 lg:px-10 py-3">
                 <Link to="/" className="-ml-4">
-                  <img src="/logos/Flex (Logo).svg" alt="Flex" className="h-12 w-auto" />
+                  <img src="/logos/Flex (Logo).svg" alt="Flex" className="h-8 md:h-12 w-auto" />
                 </Link>
                 <div className="flex items-center gap-4">
                   {loading && !user ? (
                     <div className="text-text-light-secondary dark:text-text-dark-secondary text-sm">Loading...</div>
                   ) : (
                     <>
-                      {/* Text links - always visible */}
+                      {/* Text links - desktop only */}
                       <Link
                         to="#"
                         onClick={(e) => {
                           e.preventDefault()
                           console.log('Blog clicked')
                         }}
-                        className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
+                        className="hidden md:inline text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
                       >
                         Blog
                       </Link>
-                      {/* Write a review - only on home page */}
+                      {/* Write a review - only on home page, desktop only */}
                       {isHomePage && (
                         <Link
                           to="/instructors"
-                          className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
+                          className="hidden md:inline text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary hover:underline transition-colors"
                         >
                           Write a review
                         </Link>
