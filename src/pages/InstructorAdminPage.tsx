@@ -5,7 +5,7 @@ import CategoryBadge from '../components/CategoryBadge'
 import { categories } from '../data/mockData'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabase'
-import { fetchInstructorProfile, InstructorProfile } from '../services/instructorService'
+import { fetchInstructorProfile } from '../services/instructorService'
 
 const InstructorAdminPage = () => {
   const { user } = useAuth()
