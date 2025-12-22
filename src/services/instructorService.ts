@@ -20,6 +20,8 @@ export interface Review {
   reviewer_id: string
   rating: number
   body: string
+  music_score?: number
+  difficulty_score?: number
   created_at?: string
   profiles?: {
     email: string
@@ -60,6 +62,8 @@ export const fetchInstructorReviews = async (instructorId: string): Promise<Revi
         reviewer_id,
         rating,
         body,
+        music_score,
+        difficulty_score,
         created_at
       `)
       .eq('instructor_id', instructorId)
@@ -77,6 +81,8 @@ export const fetchInstructorReviews = async (instructorId: string): Promise<Revi
       reviewer_id: review.reviewer_id,
       rating: review.rating,
       body: review.body,
+      music_score: review.music_score,
+      difficulty_score: review.difficulty_score,
       created_at: review.created_at,
       profiles: undefined, // Don't expose reviewer email to public
     }))
@@ -156,6 +162,71 @@ export const fetchInstructorsWithRatings = async (): Promise<InstructorWithRatin
   } catch (error) {
     console.error('Error fetching instructors with ratings:', error)
     return []
+  }
+}
+
+export interface UserReview {
+  id?: string
+  instructor_id: string
+  reviewer_id: string
+  rating: number
+  body: string
+  music_score?: number
+  difficulty_score?: number
+}
+
+export const fetchUserReview = async (instructorId: string, userId: string): Promise<UserReview | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id, instructor_id, reviewer_id, rating, body, music_score, difficulty_score')
+      .eq('instructor_id', instructorId)
+      .eq('reviewer_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching user review:', error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error fetching user review:', error)
+    return null
+  }
+}
+
+export const upsertReview = async (review: UserReview): Promise<{ error: any }> => {
+  try {
+    if (review.id) {
+      // Update existing review
+      const { id, ...updateData } = review
+      const { error } = await supabase
+        .from('reviews')
+        .update(updateData)
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error updating review:', error)
+        return { error }
+      }
+    } else {
+      // Insert new review
+      const { id, ...insertData } = review
+      const { error } = await supabase
+        .from('reviews')
+        .insert(insertData)
+
+      if (error) {
+        console.error('Error inserting review:', error)
+        return { error }
+      }
+    }
+
+    return { error: null }
+  } catch (error) {
+    console.error('Error upserting review:', error)
+    return { error }
   }
 }
 

@@ -58,6 +58,8 @@ The home page UI should closely match the provided HTML/CSS design. If exact cod
   - Upload a profile image
   - Edit bio and specialties
 - Instructors may only edit their own data
+- Instructor dashboard access is controlled by user role
+
 
 ---
 
@@ -75,10 +77,23 @@ The home page UI should closely match the provided HTML/CSS design. If exact cod
   - Postgres database
   - Row-level security
 
-### Core Tables
-- profiles (user accounts and roles)
-- instructors (public instructor data)
-- reviews (user-submitted reviews)
+## Core Tables (Authoritative Backend Contract)
+
+- profiles  
+  - One row per authenticated user  
+  - `id` matches `auth.users.id`  
+  - Stores user role: `'user' | 'instructor'`
+
+- instructor_profiles  
+  - One-to-one with `profiles`  
+  - Stores public instructor data (bio, categories, etc.)  
+  - Editable only by the instructor themselves
+
+- reviews  
+  - Written by authenticated users  
+  - Belong to an instructor profile  
+  - Publicly readable
+
 
 ---
 
@@ -108,3 +123,11 @@ The home page UI should closely match the provided HTML/CSS design. If exact cod
 - Do not invent unrelated features
 - Maintain UI consistency across all pages
 - Ask before making major architectural changes
+
+## Instructor Role Logic (Do Not Deviate)
+
+- All users start with role = 'user'
+- Users become instructors by explicitly selecting "Become Instructor"
+- This action updates the backend role and enables access to the instructor admin dashboard
+- Instructor-only pages must be protected via role checks
+- Instructors may only edit their own instructor profile

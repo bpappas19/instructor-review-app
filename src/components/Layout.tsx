@@ -37,8 +37,8 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 flex flex-1 justify-center py-5">
             <div className="layout-content-container flex flex-col w-full max-w-[1400px] flex-1">
               <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-4 sm:px-6 lg:px-10 py-3">
-                <Link to="/" className="text-primary font-bold text-5xl tracking-tight -ml-4">
-                  Flex
+                <Link to="/" className="-ml-4">
+                  <img src="/logos/Flex (Logo).svg" alt="Flex" className="h-12 w-auto" />
                 </Link>
                 <div className="flex items-center gap-4">
                   {loading && !user ? (

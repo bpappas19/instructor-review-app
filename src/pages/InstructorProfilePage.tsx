@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { formatDistanceToNow } from 'date-fns'
 import Layout from '../components/Layout'
 import RatingStars from '../components/RatingStars'
 import CategoryBadge from '../components/CategoryBadge'
@@ -77,30 +78,6 @@ const InstructorProfilePage = () => {
   const musicVibe = 8.7 // Placeholder - will be calculated from reviews
   const difficulty = 6.3 // Placeholder - will be calculated from reviews
 
-  // Helper function to get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  // Helper function to get relative time
-  const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (diffInDays === 0) return 'Today'
-    if (diffInDays === 1) return '1 day ago'
-    if (diffInDays < 7) return `${diffInDays} days ago`
-    if (diffInDays < 14) return '1 week ago'
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
-    if (diffInDays < 60) return '1 month ago'
-    return `${Math.floor(diffInDays / 30)} months ago`
-  }
 
   return (
     <>
@@ -154,15 +131,13 @@ const InstructorProfilePage = () => {
                   )}
                 </div>
                 {user ? (
-                  <button
-                    onClick={() => {
-                      alert('Review form coming soon!')
-                    }}
+                  <Link
+                    to={`/write-review/${id}`}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors whitespace-nowrap h-fit"
                   >
                     <span className="material-symbols-outlined text-[18px]">rate_review</span>
                     <span>Write a Review</span>
-                  </button>
+                  </Link>
                 ) : (
                   <Link
                     to="/login"
@@ -360,38 +335,31 @@ const InstructorProfilePage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {reviews.map((review) => {
-                const reviewDate = review.created_at ? getRelativeTime(review.created_at) : ''
+                let reviewDate = 'just now'
+                if (review.created_at) {
+                  const formatted = formatDistanceToNow(new Date(review.created_at), { addSuffix: true })
+                  // If the date is in the future (starts with "in"), replace with "just now"
+                  reviewDate = formatted.startsWith('in') ? 'just now' : formatted
+                }
                 const reviewerName = review.profiles?.email?.split('@')[0] || 'Anonymous Reviewer'
-                const initials = getInitials(reviewerName)
-                const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
-                const colorIndex = parseInt(review.id) % colors.length
-                const avatarColor = colors[colorIndex]
 
                 return (
                   <div key={review.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-border-light dark:border-border-dark">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}>
-                        {initials}
+                    <div className="mb-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-text-light-primary dark:text-text-dark-primary text-sm">
+                          {reviewerName}
+                        </span>
+                        <span className="text-text-light-secondary dark:text-text-dark-secondary">·</span>
+                        <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                          {reviewDate}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-text-light-primary dark:text-text-dark-primary text-sm">
-                            {reviewerName}
-                          </span>
-                          <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                            {reviewDate}
-                          </span>
-                        </div>
-                        <RatingStars rating={review.rating} size="sm" />
-                      </div>
+                      <RatingStars rating={review.rating} size="sm" />
                     </div>
-                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm leading-relaxed mb-3">
+                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm leading-relaxed">
                       {review.body}
                     </p>
-                    <button className="text-xs text-text-light-secondary dark:text-text-dark-secondary hover:text-primary transition-colors flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">thumb_up</span>
-                      <span>Helpful ({Math.floor(Math.random() * 25)})</span>
-                    </button>
                   </div>
                 )
               })}

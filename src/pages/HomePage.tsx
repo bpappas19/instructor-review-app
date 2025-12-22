@@ -13,12 +13,18 @@ const HomePage = () => {
 
   useEffect(() => {
     const loadInstructors = async () => {
-      setLoading(true)
-      const data = await fetchInstructorsWithRatings()
-      // Sort by rating descending and take top 4
-      const sorted = data.sort((a, b) => b.rating - a.rating).slice(0, 4)
-      setInstructors(sorted)
-      setLoading(false)
+      try {
+        setLoading(true)
+        const data = await fetchInstructorsWithRatings()
+        // Sort by rating descending and take top 4 (or fewer if less than 4 exist)
+        const sorted = data.sort((a, b) => b.rating - a.rating).slice(0, 4)
+        setInstructors(sorted)
+      } catch (error) {
+        console.error('Error loading instructors:', error)
+        setInstructors([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadInstructors()
@@ -136,7 +142,7 @@ const HomePage = () => {
           </div>
         ) : (
           <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary px-4">
-            No instructors found. Be the first to become an instructor!
+            No instructors yet.
           </div>
         )}
       </section>

@@ -6,6 +6,7 @@ import SignUpPage from './pages/SignUpPage'
 import LogInPage from './pages/LogInPage'
 import InstructorAdminPage from './pages/InstructorAdminPage'
 import InstructorOnboardingPage from './pages/InstructorOnboardingPage'
+import WriteReviewPage from './pages/WriteReviewPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -18,6 +19,14 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LogInPage />} />
         <Route path="/instructor/onboarding" element={<InstructorOnboardingPage />} />
+        <Route
+          path="/write-review/:instructorId"
+          element={
+            <ProtectedRoute>
+              <WriteReviewPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin"
           element={

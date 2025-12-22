@@ -22,11 +22,15 @@ const InstructorAdminPage = () => {
   const [favoriteProducts, setFavoriteProducts] = useState<Array<{ product_name: string; brand: string; purchase_url: string }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  // Save form state to sessionStorage whenever it changes
+  // Save form state to sessionStorage whenever it changes (but only after initial load)
   useEffect(() => {
-    if (!user) return
+    if (!user || !initialLoadComplete) return
     
     const formState = {
       bio,
@@ -41,7 +45,7 @@ const InstructorAdminPage = () => {
       favoriteProducts,
     }
     sessionStorage.setItem(`instructor_form_${user.id}`, JSON.stringify(formState))
-  }, [bio, selectedCategories, imageUrl, name, specialty, city, state, spotifyPlaylistUrl, featuredTracks, favoriteProducts, user])
+  }, [bio, selectedCategories, imageUrl, name, specialty, city, state, spotifyPlaylistUrl, featuredTracks, favoriteProducts, user, initialLoadComplete])
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -51,45 +55,17 @@ const InstructorAdminPage = () => {
       }
 
       setLoading(true)
+      setInitialLoadComplete(false)
       
-      // Check for unsaved changes in sessionStorage first
+      // Clear sessionStorage before loading to avoid stale empty state
       const savedStateKey = `instructor_form_${user.id}`
-      const savedState = sessionStorage.getItem(savedStateKey)
-      let hasUnsavedChanges = false
-      let unsavedState: any = null
-      
-      if (savedState) {
-        try {
-          unsavedState = JSON.parse(savedState)
-          hasUnsavedChanges = true
-        } catch (e) {
-          console.error('Error parsing saved form state:', e)
-        }
-      }
+      sessionStorage.removeItem(savedStateKey)
       
       // Load from database
       const profile = await fetchInstructorProfile(user.id)
-      console.log('Loaded profile from database:', profile)
-      console.log('Spotify URL from database:', profile?.spotify_playlist_url)
-      console.log('Featured tracks from database:', profile?.featured_tracks)
-      console.log('Featured tracks type:', typeof profile?.featured_tracks)
-      console.log('Featured tracks is array?', Array.isArray(profile?.featured_tracks))
-
-      // If there are unsaved changes in sessionStorage, restore those instead of database
-      if (hasUnsavedChanges && unsavedState) {
-        console.log('Restoring unsaved changes from sessionStorage')
-        setBio(unsavedState.bio || '')
-        setSelectedCategories(unsavedState.selectedCategories || [])
-        setImageUrl(unsavedState.imageUrl || '')
-        setName(unsavedState.name || '')
-        setSpecialty(unsavedState.specialty || '')
-        setCity(unsavedState.city || '')
-        setState(unsavedState.state || '')
-        setSpotifyPlaylistUrl(unsavedState.spotifyPlaylistUrl || '')
-        setFeaturedTracks(unsavedState.featuredTracks || [])
-        setFavoriteProducts(unsavedState.favoriteProducts || [])
-      } else if (profile) {
-        // No unsaved changes, load from database
+      
+      if (profile) {
+        // Load all data from database
         setBio(profile.bio || '')
         setSelectedCategories(profile.categories || [])
         setImageUrl(profile.image_url || '')
@@ -98,32 +74,22 @@ const InstructorAdminPage = () => {
         setCity(profile.city || '')
         setState(profile.state || '')
         setSpotifyPlaylistUrl(profile.spotify_playlist_url || '')
-        // Ensure featured_tracks is always an array, filter out empty entries
+        
+        // Ensure featured_tracks is always an array
         const tracks = profile.featured_tracks || []
         const tracksArray = Array.isArray(tracks) ? tracks : []
-        // Filter out any empty tracks (where both song_title and artist are empty)
-        const validTracks = tracksArray.filter(track => 
-          (track.song_title && track.song_title.trim() !== '') || 
-          (track.artist && track.artist.trim() !== '')
-        )
-        setFeaturedTracks(validTracks)
-        // Ensure favorite_products is always an array, filter out empty entries
+        // Don't filter out tracks - show all that exist, even if some fields are empty
+        setFeaturedTracks(tracksArray.length > 0 ? tracksArray : [])
+        
+        // Ensure favorite_products is always an array
         const products = profile.favorite_products || []
         const productsArray = Array.isArray(products) ? products : []
-        // Filter out any empty products (where all fields are empty)
-        const validProducts = productsArray.filter(product => 
-          (product.product_name && product.product_name.trim() !== '') || 
-          (product.brand && product.brand.trim() !== '') || 
-          (product.purchase_url && product.purchase_url.trim() !== '')
-        )
-        setFavoriteProducts(validProducts)
-        console.log('Loaded from database')
-        console.log('Number of tracks loaded:', tracksArray.length)
-        console.log('Set favorite products to:', productsArray)
-        console.log('Number of products loaded:', productsArray.length)
+        // Don't filter out products - show all that exist, even if some fields are empty
+        setFavoriteProducts(productsArray.length > 0 ? productsArray : [])
       }
 
       setLoading(false)
+      setInitialLoadComplete(true)
     }
 
     loadProfile()
@@ -137,14 +103,75 @@ const InstructorAdminPage = () => {
     )
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      // Create preview URL
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    }
+  }
+
+  // Clean up object URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
+  // Get the current display image (preview if selected, otherwise existing image URL, otherwise null)
+  const displayImageUrl = previewUrl || imageUrl || null
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
 
     setError(null)
     setSaving(true)
+    setUploading(false)
 
     try {
+      // Upload image to Supabase Storage if a file is selected
+      let uploadedImageUrl = imageUrl
+      
+      if (selectedFile) {
+        setUploading(true)
+        const filePath = `${user.id}.jpg`
+        
+        // Upload file to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('instructor-headshots')
+          .upload(filePath, selectedFile, {
+            upsert: true,
+            contentType: selectedFile.type,
+          })
+
+        if (uploadError) {
+          setUploading(false)
+          setSaving(false)
+          setError(`Failed to upload image: ${uploadError.message}`)
+          return
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('instructor-headshots')
+          .getPublicUrl(filePath)
+
+        if (!urlData?.publicUrl) {
+          setUploading(false)
+          setSaving(false)
+          setError('Failed to get image URL after upload')
+          return
+        }
+
+        uploadedImageUrl = urlData.publicUrl
+        setImageUrl(uploadedImageUrl)
+        setUploading(false)
+      }
       // Filter out empty tracks and products before saving
       const validTracks = featuredTracks.filter(track => 
         (track.song_title && track.song_title.trim() !== '') || 
@@ -189,7 +216,7 @@ const InstructorAdminPage = () => {
         name: (name && name.trim() !== '') ? name : (existingProfile?.name || null),
         bio: (bio && bio.trim() !== '') ? bio : (existingProfile?.bio || null),
         categories: selectedCategories.length > 0 ? selectedCategories : (existingProfile?.categories || null),
-        image_url: (imageUrl && imageUrl.trim() !== '') ? imageUrl : (existingProfile?.image_url || null),
+        image_url: uploadedImageUrl || (existingProfile?.image_url || null),
         specialty: (specialty && specialty.trim() !== '') ? specialty : (existingProfile?.specialty || null),
         // Update location fields from form state (preserve existing if form is empty)
         city: (city && city.trim() !== '') ? city : (existingProfile?.city || null),
@@ -287,6 +314,53 @@ const InstructorAdminPage = () => {
               </div>
             )}
 
+            {/* Profile Photo Section */}
+            <div className="space-y-4 pb-6 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-base font-semibold text-text-light-primary dark:text-text-dark-primary mb-4">
+                Profile photo
+              </h2>
+              
+              <div className="flex flex-col items-start gap-4">
+                {/* Image Display */}
+                <div className="flex items-center gap-4">
+                  {displayImageUrl ? (
+                    <img
+                      src={displayImageUrl}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
+                      <span className="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">
+                        person
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* File Input */}
+                <div>
+                  <label
+                    htmlFor="profile-photo"
+                    className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-2"
+                  >
+                    Upload photo
+                  </label>
+                  <input
+                    id="profile-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileSelect}
+                    disabled={uploading || saving}
+                    className="block w-full text-sm text-text-light-secondary dark:text-text-dark-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-blue-600 file:cursor-pointer cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                    Accepted formats: JPEG, PNG, WebP
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Basic Info Section */}
             <div className="space-y-4 pb-6 border-b border-gray-100 dark:border-gray-700">
               <h2 className="text-base font-semibold text-text-light-primary dark:text-text-dark-primary mb-4">
@@ -358,34 +432,6 @@ const InstructorAdminPage = () => {
                     onChange={(e) => setState(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-text-light-primary dark:text-text-dark-primary placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white dark:focus:bg-gray-700 transition-colors"
                     placeholder="State"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Image Section */}
-            <div className="pb-6 border-b border-gray-100 dark:border-gray-700">
-              <h2 className="text-base font-semibold text-text-light-primary dark:text-text-dark-primary mb-4">
-                Profile Image
-              </h2>
-              <div>
-                <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-2">
-                  Profile Image URL
-                </label>
-                <div className="flex items-center gap-4">
-                  {imageUrl && (
-                    <img
-                      src={imageUrl}
-                      alt="Profile preview"
-                      className="w-32 h-32 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-                    />
-                  )}
-                  <input
-                    type="text"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Image URL (file upload coming soon)"
-                    className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-text-light-primary dark:text-text-dark-primary placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white dark:focus:bg-gray-700 transition-colors"
                   />
                 </div>
               </div>
@@ -650,10 +696,10 @@ const InstructorAdminPage = () => {
               </button>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors font-bold tracking-[0.015em] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                {uploading ? 'Uploading image...' : saving ? 'Saving...' : 'Save Profile'}
               </button>
             </div>
           </form>

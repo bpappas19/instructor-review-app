@@ -1,17 +1,39 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import InstructorListCard from '../components/InstructorListCard'
-import { categories } from '../data/mockData'
 import { fetchInstructorsWithRatings, InstructorWithRating } from '../services/instructorService'
 
 const InstructorDirectoryPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '')
-  const [minRating, setMinRating] = useState<number>(0)
   const [instructors, setInstructors] = useState<InstructorWithRating[]>([])
   const [loading, setLoading] = useState(true)
   const searchQuery = searchParams.get('search') || ''
+  const categoryFromUrl = searchParams.get('category') || ''
+  
+  // Filter states
+  const [minRating, setMinRating] = useState<number>(0)
+  const [selectedLocation, setSelectedLocation] = useState<string>('')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const categoryDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false)
+      }
+    }
+
+    if (categoryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [categoryDropdownOpen])
 
   useEffect(() => {
     const loadInstructors = async () => {
@@ -24,26 +46,97 @@ const InstructorDirectoryPage = () => {
     loadInstructors()
   }, [])
 
-  const filteredInstructors = instructors.filter((instructor) => {
-    const matchesCategory = !selectedCategory || (instructor.categories || []).includes(selectedCategory)
-    const matchesRating = instructor.rating >= minRating
-    const matchesSearch = !searchQuery || 
-      (instructor.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (instructor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (instructor.categories || []).some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchesCategory && matchesRating && matchesSearch
-  })
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category)
-    const newParams = new URLSearchParams(searchParams)
-    if (category) {
-      newParams.set('category', category)
-    } else {
-      newParams.delete('category')
+  // Initialize category filter from URL params
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setSelectedCategories([categoryFromUrl])
     }
-    setSearchParams(newParams)
+  }, [categoryFromUrl])
+
+  // Extract available data-driven options
+  const availableCategories = useMemo(() => {
+    const categorySet = new Set<string>()
+    instructors.forEach(instructor => {
+      (instructor.categories || []).forEach(cat => categorySet.add(cat))
+    })
+    return Array.from(categorySet).sort()
+  }, [instructors])
+
+  const availableLocations = useMemo(() => {
+    const locationMap = new Map<string, { city: string; state: string }>()
+    instructors.forEach(instructor => {
+      if (instructor.city || instructor.state) {
+        const locationKey = `${instructor.city || ''}, ${instructor.state || ''}`.trim()
+        if (locationKey && locationKey !== ',') {
+          locationMap.set(locationKey, {
+            city: instructor.city || '',
+            state: instructor.state || '',
+          })
+        }
+      }
+    })
+    return Array.from(locationMap.entries()).map(([key, value]) => ({ key, ...value })).sort((a, b) => {
+      if (a.state !== b.state) return a.state.localeCompare(b.state)
+      return a.city.localeCompare(b.city)
+    })
+  }, [instructors])
+
+  // Filter instructors
+  const filteredInstructors = useMemo(() => {
+    return instructors.filter((instructor) => {
+      // Rating filter
+      const matchesRating = instructor.rating >= minRating
+      
+      // Location filter
+      const instructorLocation = `${instructor.city || ''}, ${instructor.state || ''}`.trim()
+      const matchesLocation = !selectedLocation || instructorLocation === selectedLocation
+      
+      // Category filter (multi-select)
+      const matchesCategory = selectedCategories.length === 0 || 
+        (instructor.categories || []).some(cat => selectedCategories.includes(cat))
+      
+      // Search filter
+      const matchesSearch = !searchQuery || 
+        (instructor.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (instructor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (instructor.categories || []).some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
+      
+      return matchesRating && matchesLocation && matchesCategory && matchesSearch
+    })
+  }, [instructors, minRating, selectedLocation, selectedCategories, searchQuery])
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category)
+      } else {
+        return [...prev, category]
+      }
+    })
   }
+
+  const handleClearFilters = () => {
+    setMinRating(0)
+    setSelectedLocation('')
+    setSelectedCategories([])
+    setCategoryDropdownOpen(false)
+    // Clear category from URL if present
+    if (categoryFromUrl) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('category')
+      setSearchParams(newParams, { replace: true })
+    }
+  }
+
+  const hasActiveFilters = minRating > 0 || selectedLocation !== '' || selectedCategories.length > 0
+
+  const ratingOptions = [
+    { value: 0, label: 'All Ratings' },
+    { value: 3.0, label: '3.0+' },
+    { value: 3.5, label: '3.5+' },
+    { value: 4.0, label: '4.0+' },
+    { value: 4.5, label: '4.5+' },
+  ]
 
   return (
     <>
@@ -59,108 +152,168 @@ const InstructorDirectoryPage = () => {
       <div className="relative directory-layout">
         <Layout>
           <section className="my-10">
-        <div className="px-4 pb-4">
-          <Link to="/" className="text-primary hover:text-blue-600 transition-colors text-sm mb-4 inline-block">
-            ← Back to Home
-          </Link>
-          <h1 className="text-text-light-primary dark:text-text-dark-primary text-[28px] font-bold leading-tight tracking-[-0.015em]">Instructor Directory</h1>
-        </div>
+            <div className="px-4 pb-4">
+              <Link to="/" className="text-primary hover:text-blue-600 transition-colors text-sm mb-4 inline-block">
+                ← Back to Home
+              </Link>
+              <h1 className="text-text-light-primary dark:text-text-dark-primary text-[28px] font-bold leading-tight tracking-[-0.015em]">Instructor Directory</h1>
+            </div>
 
-        {/* Search Results Info */}
-        {searchQuery && (
-          <div className="px-4 mb-4">
-            <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
-              Search results for "{searchQuery}"
-            </p>
-          </div>
-        )}
-
-        {/* Filter Pills */}
-        <div className="px-4 mb-6">
-          <div className="flex gap-3 flex-wrap">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-              <span className="material-symbols-outlined text-[18px]">star</span>
-              <span>Rating</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-              <span className="material-symbols-outlined text-[18px]">filter_list</span>
-              <span>Category</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-              <span className="material-symbols-outlined text-[18px]">location_on</span>
-              <span>Location</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content with Sidebar */}
-        <div className="flex gap-6 px-4">
-          {/* Main Content Area */}
-          <div className="flex-1">
-            {loading ? (
-              <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
-                Loading instructors...
+            {/* Search Results Info */}
+            {searchQuery && (
+              <div className="px-4 mb-4">
+                <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
+                  Search results for "{searchQuery}"
+                </p>
               </div>
-            ) : (
-              <>
-                {/* Instructor List */}
-                <div className="space-y-4">
-                  {filteredInstructors.map((instructor) => (
-                    <InstructorListCard
-                      key={instructor.id}
-                      instructor={{
-                        id: instructor.id,
-                        name: instructor.name || 'Instructor',
-                        specialty: instructor.specialty || '',
-                        rating: instructor.rating,
-                        imageUrl: instructor.imageUrl,
-                        bio: instructor.bio || '',
-                        categories: instructor.categories || [],
-                        reviewCount: instructor.reviewCount,
-                      }}
-                    />
-                  ))}
+            )}
+
+            {/* Filter Pills */}
+            <div className="px-4 mb-6">
+              <div className="flex gap-3 flex-wrap">
+                {/* Rating Filter Pill */}
+                <div className="relative">
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+                    <span className="material-symbols-outlined text-[18px]">star</span>
+                    <span>Rating</span>
+                  </button>
+                  <select
+                    value={minRating}
+                    onChange={(e) => setMinRating(Number(e.target.value))}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    aria-label="Rating filter"
+                  >
+                    {ratingOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {filteredInstructors.length === 0 && (
-                  <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
-                    No instructors found matching your filters.
+                {/* Category Filter Pill with Dropdown */}
+                {availableCategories.length > 0 && (
+                  <div className="relative" ref={categoryDropdownRef}>
+                    <button
+                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                        categoryDropdownOpen || selectedCategories.length > 0
+                          ? 'bg-primary text-white border-primary hover:bg-blue-600'
+                          : 'border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                      <span>Category</span>
+                      {selectedCategories.length > 0 && (
+                        <span className="ml-1">({selectedCategories.length})</span>
+                      )}
+                    </button>
+                    
+                    {/* Category Dropdown */}
+                    {categoryDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-2 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg p-3 z-50 min-w-[200px] max-w-[400px]">
+                        <div className="flex flex-wrap gap-2">
+                          {availableCategories.map(category => {
+                            const isSelected = selectedCategories.includes(category)
+                            return (
+                              <button
+                                key={category}
+                                type="button"
+                                onClick={() => handleCategoryToggle(category)}
+                                className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? 'bg-primary text-white border-primary hover:bg-blue-600'
+                                    : 'bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-slate-700'
+                                }`}
+                              >
+                                {category}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </>
-            )}
-          </div>
 
-          {/* Right Sidebar - Categories */}
-          <aside className="w-56 flex-shrink-0 hidden lg:block">
-            <div className="bg-white dark:bg-surface-dark rounded-lg shadow-sm border border-border-light dark:border-border-dark p-4 sticky top-0">
-              <h2 className="text-text-light-primary dark:text-text-dark-primary text-sm font-bold mb-3">Categories</h2>
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.name}
-                    onClick={() => handleCategoryChange(category.name)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedCategory === category.name
-                        ? 'bg-primary text-white'
-                        : 'text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700'
-                    }`}
+                {/* Location Filter Pill - always shown */}
+                <div className="relative">
+                  <button 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                      selectedLocation
+                        ? 'bg-primary text-white border-primary hover:bg-blue-600'
+                        : 'border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700'
+                    } ${availableLocations.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={availableLocations.length === 0}
                   >
-                    <span className={`material-symbols-outlined text-[18px] ${
-                      selectedCategory === category.name
-                        ? 'text-white'
-                        : 'text-text-light-secondary dark:text-text-dark-secondary'
-                    }`} style={category.name === 'Strength' ? { fontVariationSettings: "'wght' 600" } : {}}>
-                      {category.icon}
-                    </span>
-                    <span className="font-medium">{category.name}</span>
+                    <span className="material-symbols-outlined text-[18px]">location_on</span>
+                    <span>Location</span>
                   </button>
-                ))}
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    disabled={availableLocations.length === 0}
+                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    aria-label="Location filter"
+                  >
+                    <option value="">All Locations</option>
+                    {availableLocations.map(location => (
+                      <option key={location.key} value={location.key}>
+                        {location.key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Clear Filters Button - only show when filters are active */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                    <span>Clear filters</span>
+                  </button>
+                )}
               </div>
             </div>
-          </aside>
-        </div>
-      </section>
+
+            {/* Main Content */}
+            <div className="px-4">
+              {loading ? (
+                <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
+                  Loading instructors...
+                </div>
+              ) : (
+                <>
+                  {/* Instructor List */}
+                  <div className="space-y-4">
+                    {filteredInstructors.map((instructor) => (
+                      <InstructorListCard
+                        key={instructor.id}
+                        instructor={{
+                          id: instructor.id,
+                          name: instructor.name || 'Instructor',
+                          specialty: instructor.specialty || '',
+                          rating: instructor.rating,
+                          imageUrl: instructor.imageUrl,
+                          bio: instructor.bio || '',
+                          categories: instructor.categories || [],
+                          reviewCount: instructor.reviewCount,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {filteredInstructors.length === 0 && (
+                    <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
+                      No instructors found matching your filters.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
         </Layout>
       </div>
     </>
