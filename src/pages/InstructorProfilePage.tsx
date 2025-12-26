@@ -153,8 +153,8 @@ const InstructorProfilePage = () => {
               <div className="grid grid-cols-2 md:flex md:flex-wrap md:items-center gap-4 md:gap-6 mb-8 md:mb-6">
                 {/* Rating Metric */}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-amber-700 dark:text-amber-300 text-lg">star</span>
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-800/30 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-green-700 dark:text-green-300 text-lg">star</span>
                   </div>
                   <div>
                     <div className="text-2xl md:text-3xl font-bold text-text-light-primary dark:text-text-dark-primary leading-none">
